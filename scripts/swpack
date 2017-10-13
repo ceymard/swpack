@@ -1,0 +1,80 @@
+#!/usr/bin/env node
+
+const webpack = require('webpack')
+const path = require('path')
+const colors = require('colors')
+
+const args = require('minimist')(process.argv.slice(2), {
+  string: ['o'],
+  boolean: ['d', 'w'],
+  alias: {
+    o: 'output',
+    d: 'debug',
+    w: 'watch'
+  }
+})
+
+const [ENTRY] = args._
+
+var PATH = path.join(process.cwd(), path.dirname(args.o))
+var OUTFILE = path.basename(args.o)
+
+var config = {
+  cache: true,
+  entry: ENTRY,
+  stats: {children: false},
+  node: {
+    Buffer: false,
+    global: false,
+    process: false,
+    setImmediate: false
+  },
+  output: {
+    path: PATH,
+    publicPath: '/',
+    filename: OUTFILE,
+    sourceMapFilename: '[file].map'
+  },
+  context: path.join(__dirname, '..'),
+  entry: {
+    whatever: path.join(process.cwd(), ENTRY)
+  },
+  resolve: { extensions: ['.js'] }
+}
+
+
+if (args.debug) {
+  config.devtool = 'source-map'
+  config.module = config.module || {}
+  config.module.rules = config.module.rules || []
+  config.module.rules.push(
+    {test: /\.js$/, use: 'source-map-loader', enforce: 'pre'}
+  )
+}
+
+var compiler = webpack(config)
+
+function handleStats(stats) {
+  const s = stats.toJson('verbose')
+  // console.log(stats.toJson('verbose'))
+  if (stats.hasErrors()) {
+    for (var e of s.errors) {
+      console.log(colors.bold.red(' !!'), e)
+    }
+    // console.log(colors.red(JSON.stringify(stats.toJson('minimal'))))
+  } else {
+    for (var a of s.assets) {
+      console.log(colors.bold.green(' =>'), a.name, `(${colors.green(Math.round(a.size / 1024) + 'kb')})`)
+    }
+  }
+}
+
+if (args.watch) {
+  compiler.watch({}, (err, stats) => {
+    handleStats(stats)
+  })
+} else {
+  compiler.run((err, stats) => {
+    handleStats(stats)
+  })
+}

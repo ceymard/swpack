@@ -1,0 +1,12 @@
+{
+	"name": "swpack",
+	"bin": {
+		"swpack": "./scripts/swpack"
+	},
+	"dependencies": {
+		"colors": "^1.1.2",
+		"minimist": "^1.2.0",
+		"source-map-loader": "^0.2.1",
+		"webpack": "^3.6.0"
+	}
+}
