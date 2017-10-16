@@ -3,56 +3,71 @@
 const webpack = require('webpack')
 const path = require('path')
 const colors = require('colors')
+const merge = require('deepmerge')
 
 const args = require('minimist')(process.argv.slice(2), {
   string: ['o'],
-  boolean: ['d', 'w'],
+  boolean: ['w'],
   alias: {
     o: 'output',
-    d: 'debug',
     w: 'watch'
   }
 })
 
-const [ENTRY] = args._
+const $configs = []
 
-var PATH = path.join(process.cwd(), path.dirname(args.o))
-var OUTFILE = path.basename(args.o)
+/**
+ * For each entry, we are going to create a config Object.
+ */
+var $output_path = path.join(process.cwd(), args.o ? path.dirname(args.o) : '.')
 
-var config = {
-  cache: true,
-  entry: ENTRY,
-  stats: {children: false},
-  node: {
-    Buffer: false,
-    global: false,
-    process: false,
-    setImmediate: false
-  },
-  output: {
-    path: PATH,
-    publicPath: '/',
-    filename: OUTFILE,
-    sourceMapFilename: '[file].map'
-  },
-  context: path.join(__dirname, '..'),
-  entry: {
-    whatever: path.join(process.cwd(), ENTRY)
-  },
-  resolve: { extensions: ['.js'] }
+for (var entry of args._) {
+
+  var [src, dst] = entry.split(':')
+  src = path.join(process.cwd(), src)
+  dst = path.relative($output_path, dst)
+
+  var config = {
+    cache: true,
+    devtool: 'source-map',
+    entry: {[dst]: src},
+    stats: {children: false},
+    node: {
+      Buffer: false,
+      global: false,
+      process: false,
+      setImmediate: false
+    },
+    output: {
+      path: $output_path,
+      publicPath: '/',
+      filename: '[name]',
+      sourceMapFilename: '[file].map'
+    },
+    context: path.join(__dirname, '..'),
+    resolve: {
+      extensions: ['.js', '.ts', '.tsx', '.css', '.styl']
+    },
+    module: {
+      rules: [
+        {test: /\.js$/, use: 'source-map-loader', enforce: 'pre'},
+        {test: /\.tsx?$/, loader: 'ts-loader'}
+      ]
+    },
+    plugins: [
+      // Ignore the css .d.ts files created by typings-for-css-modules-loader
+      new webpack.WatchIgnorePlugin([
+        /css\.d\.ts$/
+      ])
+    ]
+  }
+
+  $configs.push(config)
+
 }
 
 
-if (args.debug) {
-  config.devtool = 'source-map'
-  config.module = config.module || {}
-  config.module.rules = config.module.rules || []
-  config.module.rules.push(
-    {test: /\.js$/, use: 'source-map-loader', enforce: 'pre'}
-  )
-}
-
-var compiler = webpack(config)
+var compiler = webpack($configs)
 
 function handleStats(stats) {
   const s = stats.toJson('verbose')
@@ -63,8 +78,12 @@ function handleStats(stats) {
     }
     // console.log(colors.red(JSON.stringify(stats.toJson('minimal'))))
   } else {
-    for (var a of s.assets) {
-      console.log(colors.bold.green(' =>'), a.name, `(${colors.green(Math.round(a.size / 1024) + 'kb')})`)
+    // console.log(s)
+    var to_print = s.children ? s.children : [s]
+    for (var t of to_print) {
+      for (var a of t.assets) {
+        console.log(colors.bold.green(' =>'), a.name, `(${colors.green(Math.round(a.size / 1024) + 'kb')})`)
+      }
     }
   }
 }

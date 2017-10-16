@@ -5,8 +5,12 @@
 	},
 	"dependencies": {
 		"colors": "^1.1.2",
+		"deepmerge": "^2.0.0",
 		"minimist": "^1.2.0",
 		"source-map-loader": "^0.2.1",
+		"ts-loader": "^2.3.7",
+		"typescript": "^2.5.3",
+		"typings-for-css-modules-loader": "^1.7.0",
 		"webpack": "^3.6.0"
 	}
 }
