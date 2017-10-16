@@ -7,10 +7,8 @@ const merge = require('deepmerge')
 
 
 const args = require('minimist')(process.argv.slice(2), {
-  string: ['o'],
   boolean: ['w'],
   alias: {
-    o: 'output',
     w: 'watch'
   }
 })
@@ -27,7 +25,7 @@ for (var entry of args._) {
   var [src, dst] = entry.split(':')
   src = path.join(process.cwd(), src)
   dst = path.relative($output_path, dst)
-  console.log(src, dst)
+  // console.log(src, dst)
 
   var config = {
     cache: true,
@@ -42,25 +40,27 @@ for (var entry of args._) {
     },
     output: {
       // path: $output_path,
-      // publicPath: '/',
+      publicPath: '/',
       filename: '[name]',
       sourceMapFilename: '[file].map'
     },
     context: path.join(__dirname, '..'),
     resolve: {
-      extensions: ['.js', '.ts', '.tsx', '.css', '.styl']
+      extensions: ['.js', '.ts', '.tsx', '.css', '.styl', '.less', '.sass', '.scss']
     },
     module: {
       rules: [
         {test: /\.js$/, use: 'source-map-loader', enforce: 'pre'},
+        {test: /\.css$/, use: ['style-loader', 'typings-for-css-modules-loader?modules&namedExport&camelCase']},
+        {test: /\.styl$/, use: ['style-loader', 'typings-for-css-modules-loader?modules&namedExport&camelCase', 'stylus-loader']},
         {test: /\.tsx?$/, loader: 'ts-loader'}
       ]
     },
     plugins: [
       // Ignore the css .d.ts files created by typings-for-css-modules-loader
-      new webpack.WatchIgnorePlugin([
-        /css\.d\.ts$/
-      ])
+      // new webpack.WatchIgnorePlugin([
+      //   /css\.d\.ts$/
+      // ])
     ]
   }
 
