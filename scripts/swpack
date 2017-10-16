@@ -5,6 +5,7 @@ const path = require('path')
 const colors = require('colors')
 const merge = require('deepmerge')
 
+
 const args = require('minimist')(process.argv.slice(2), {
   string: ['o'],
   boolean: ['w'],
@@ -26,6 +27,7 @@ for (var entry of args._) {
   var [src, dst] = entry.split(':')
   src = path.join(process.cwd(), src)
   dst = path.relative($output_path, dst)
+  console.log(src, dst)
 
   var config = {
     cache: true,
@@ -39,8 +41,8 @@ for (var entry of args._) {
       setImmediate: false
     },
     output: {
-      path: $output_path,
-      publicPath: '/',
+      // path: $output_path,
+      // publicPath: '/',
       filename: '[name]',
       sourceMapFilename: '[file].map'
     },
@@ -69,12 +71,17 @@ for (var entry of args._) {
 
 var compiler = webpack($configs)
 
+function err(msg) {
+  console.log(colors.bold.red(' !!'), msg)
+}
+
+
 function handleStats(stats) {
   const s = stats.toJson('verbose')
   // console.log(stats.toJson('verbose'))
   if (stats.hasErrors()) {
     for (var e of s.errors) {
-      console.log(colors.bold.red(' !!'), e)
+      err(e)
     }
     // console.log(colors.red(JSON.stringify(stats.toJson('minimal'))))
   } else {
@@ -89,11 +96,16 @@ function handleStats(stats) {
 }
 
 if (args.watch) {
-  compiler.watch({}, (err, stats) => {
-    handleStats(stats)
+  compiler.watch({}, (e, stats) => {
+    if (!e)
+      handleStats(stats)
+    else err(JSON.stringify(e))
   })
 } else {
-  compiler.run((err, stats) => {
-    handleStats(stats)
+  compiler.run((e, stats) => {
+    if (!e)
+      handleStats(stats)
+    else
+      err(JSON.stringify(e))
   })
 }
